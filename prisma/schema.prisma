@@ -3,13 +3,12 @@
 
 generator client {
   provider = "prisma-client-js"
-  output = "../generated/prisma_client"
 }
 
 generator typescriptInterfaces {
   provider = "prisma-generator-typescript-interfaces"
   output = "../src/db/databaseTypes.ts"
-  enumType = "type"
+  enumType = "enum"
   language = "typescript"
 }
 

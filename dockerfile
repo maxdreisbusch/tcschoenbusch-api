@@ -1,44 +1,54 @@
-# --- Stage 1: Build Stage ---
-    FROM node:22-alpine AS builder
+# syntax = docker/dockerfile:1
 
-    RUN apk add openssl
+# Adjust NODE_VERSION as desired
+ARG NODE_VERSION=20.14.0
+FROM node:${NODE_VERSION}-slim AS base
 
-    WORKDIR /app
-    
-    # Install dependencies only
-    COPY package*.json ./
-    #RUN npm ci --omit=dev
-    RUN npm ci
-    
-    # Copy source files and Prisma schema
-    COPY . .
-    
-    # Generate Prisma client (keep only output, not full Prisma CLI)
-    RUN npx prisma generate
-    
-    # Optional: Build TypeScript (if using TS)
-    RUN node build.mjs
-    
-    # --- Stage 2: Production Stage ---
-    FROM node:22-alpine
+LABEL fly_launch_runtime="Node.js/Prisma"
 
-    RUN apk add openssl
-    
-    WORKDIR /app
-    
-    # Copy only runtime-needed files
-    COPY --from=builder /app/node_modules ./node_modules
-    COPY --from=builder /app/prisma ./prisma
-    COPY --from=builder /app/dist/server ./dist
-    COPY --from=builder /app/package.json ./package.json
-    COPY --from=builder /app/generated ./generated
-    
-    # Copy any runtime entry script if needed
-    COPY entrypoint.sh ./entrypoint.sh
-    RUN chmod +x ./entrypoint.sh
-    
-    # Set production environment
-    ENV NODE_ENV=production
-    
-    ENTRYPOINT ["./entrypoint.sh"]
-    
+# Node.js/Prisma app lives here
+WORKDIR /app
+
+# Set production environment
+ENV NODE_ENV="production"
+
+
+# Throw-away build stage to reduce size of final image
+FROM base AS build
+
+# Install packages needed to build node modules
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y build-essential node-gyp openssl pkg-config python-is-python3
+
+# Install node modules
+COPY package-lock.json package.json ./
+RUN npm ci --include=dev
+
+# Generate Prisma Client
+COPY prisma .
+RUN npx prisma generate
+
+# Copy application code
+COPY . .
+
+# Build application
+RUN npm run build
+
+# Remove development dependencies
+RUN npm prune --omit=dev
+
+
+# Final stage for app image
+FROM base
+
+# Install packages needed for deployment
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y openssl && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Copy built application
+COPY --from=build /app /app
+
+# Start the server by default, this can be overwritten at runtime
+EXPOSE 4000
+CMD [ "node", "dist/server/express.mjs" ]

@@ -1,0 +1,22 @@
+{
+	"schema": "https://json.schemastore.org/tsconfig",
+	"display": "Export TRPC API",
+	"compilerOptions": {
+		"declaration": true,
+		"declarationDir": "dist",
+		"baseUrl": "./src",
+		"paths": { ".": ["."] },
+		"allowJs": true,
+		"strict": true,
+		"strictNullChecks": true,
+		"pretty": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"skipLibCheck": true,
+		"esModuleInterop": true,
+		"moduleResolution": "node",
+		"module": "commonjs"
+	},
+	"exclude": ["./dist", "./node_modules", "./generated"]
+}

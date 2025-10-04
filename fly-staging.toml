@@ -1,0 +1,31 @@
+# fly.toml app configuration file generated for tcschoenbusch-api on 2025-08-09T15:57:25+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'tcschoenbusch-api-staging'
+primary_region = 'fra'
+
+[build]
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+[env]
+  TOKEN_AUDIENCE = "https://api.tc-schoenbusch.de"
+  TOKEN_ISSUER   = "https://login.tc-schoenbusch.de/"
+  DATABASE_URL   = "mysql://d03ccd9c:myTCS-Staging@max-dreisbusch.de:3306/d03ccd9c"
+  PAYPAL_ID      = "AQo6Q29K2B9GWDaTNgQqgQh5Ni-j8ZRHk1cuFkAYcHTjyhzBEwAbZUBJcLu3KEuZQmI3TpzNgWjasojT"
+  PAYPAL_SECRET  = "EDzRf2xO7LPHrULITpeqwslPO_RO1pU-d1lpW3i4sVc72CGzbx4lkzG2t3cwfLzU3zyr0_7erXEMZxNW"
+  PAYPAL_URL     = "https://api-m.sandbox.paypal.com"
+  NODE_ENV       = "development"

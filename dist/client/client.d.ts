@@ -842,6 +842,27 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
             meta: object;
         }>;
     }>>;
+    membership: _trpc_server.TRPCBuiltRouter<{
+        ctx: {
+            session: AppSessionUser | null;
+            prisma: _prisma_client.PrismaClient<{
+                log: ("query" | "warn" | "error")[];
+            }, never, _prisma_client_runtime_library.DefaultArgs>;
+        };
+        meta: object;
+        errorShape: _trpc_server.TRPCDefaultErrorShape;
+        transformer: true;
+    }, _trpc_server.TRPCDecorateCreateRouterOptions<{
+        getMembershipCardData: _trpc_server.TRPCQueryProcedure<{
+            input: void;
+            output: {
+                id: string;
+                name: string | null;
+                email: string | null;
+            };
+            meta: object;
+        }>;
+    }>>;
     notification: _trpc_server.TRPCBuiltRouter<{
         ctx: {
             session: AppSessionUser | null;

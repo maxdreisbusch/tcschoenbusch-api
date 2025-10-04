@@ -20,6 +20,7 @@ import { teamSeasonRouter } from './teamSeason';
 import { transactionRouter } from './transaction';
 import { userRouter } from './user';
 import { userRoleRouter } from './userRole';
+import { membershipRouter } from './membership';
 
 /**
  * This is the primary router for your server.
@@ -35,6 +36,7 @@ export const appRouter = createTRPCRouter({
 	events: eventsRouter,
 	eventCategories: eventCategoriesRouter,
 	hallencard: hallencardRouter,
+	membership: membershipRouter,
 	notification: notificationRouter,
 	organisations: organisationsRouter,
 	organisationMembers: organisationMembersRouter,

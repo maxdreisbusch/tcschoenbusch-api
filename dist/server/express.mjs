@@ -2569,6 +2569,14 @@ var userRoleRouter = createTRPCRouter({
   })
 });
 
+// src/router/routers/membership.ts
+var routerName22 = "membership";
+var membershipRouter = createTRPCRouter({
+  getMembershipCardData: roleCheckProcedure(routerName22, "get").query(({ ctx }) => {
+    return { id: ctx.session.id, name: ctx.session.name, email: ctx.session.email };
+  })
+});
+
 // src/router/routers/index.ts
 var appRouter = createTRPCRouter({
   area: areaRouter,
@@ -2579,6 +2587,7 @@ var appRouter = createTRPCRouter({
   events: eventsRouter,
   eventCategories: eventCategoriesRouter,
   hallencard: hallencardRouter,
+  membership: membershipRouter,
   notification: notificationRouter,
   organisations: organisationsRouter,
   organisationMembers: organisationMembersRouter,

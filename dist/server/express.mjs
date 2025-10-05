@@ -294,6 +294,7 @@ var getAppSessionUser = async (payload) => {
   });
   return generateAppSessionUser(user);
 };
+var generateMembershipToken = (payload) => jwt.sign(payload, "AbTcSMemBership#Card#2025!", { expiresIn: "30d" });
 
 // src/router/index.ts
 var createContext = async ({ req }) => {
@@ -2570,14 +2571,15 @@ var userRoleRouter = createTRPCRouter({
 });
 
 // src/router/routers/membership.ts
-import * as jwt2 from "jsonwebtoken";
 var routerName22 = "membership";
 var membershipRouter = createTRPCRouter({
   getMembershipCardData: roleCheckProcedure(routerName22, "get").query(({ ctx }) => {
-    const membershipToken = jwt2.sign({ id: ctx.session.id, name: ctx.session.name, email: ctx.session.email }, "AbTcSMemBership#CardSecret#2025!", {
-      expiresIn: "30 days"
-    });
-    return { id: ctx.session.id, name: ctx.session.name, email: ctx.session.email, membershipToken };
+    try {
+      const membershipToken = generateMembershipToken({ id: ctx.session.id, name: ctx.session.name, email: ctx.session.email });
+      return { id: ctx.session.id, name: ctx.session.name, email: ctx.session.email, membershipToken };
+    } catch (error) {
+      console.error("Error generating membership token:", error);
+    }
   })
 });
 

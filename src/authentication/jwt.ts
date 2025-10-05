@@ -85,3 +85,5 @@ export const getAppSessionUser = async (payload: jwt.JwtPayload): Promise<AppSes
 	});
 	return generateAppSessionUser(user);
 };
+
+export const generateMembershipToken = (payload: object) => jwt.sign(payload, 'AbTcSMemBership#Card#2025!', { expiresIn: '30d' });

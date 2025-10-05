@@ -859,6 +859,7 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
                 id: string;
                 name: string | null;
                 email: string | null;
+                membershipToken: string;
             };
             meta: object;
         }>;

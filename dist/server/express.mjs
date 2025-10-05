@@ -2570,10 +2570,14 @@ var userRoleRouter = createTRPCRouter({
 });
 
 // src/router/routers/membership.ts
+import * as jwt2 from "jsonwebtoken";
 var routerName22 = "membership";
 var membershipRouter = createTRPCRouter({
   getMembershipCardData: roleCheckProcedure(routerName22, "get").query(({ ctx }) => {
-    return { id: ctx.session.id, name: ctx.session.name, email: ctx.session.email };
+    const membershipToken = jwt2.sign({ id: ctx.session.id, name: ctx.session.name, email: ctx.session.email }, "AbTcSMemBership#CardSecret#2025!", {
+      expiresIn: "30 days"
+    });
+    return { id: ctx.session.id, name: ctx.session.name, email: ctx.session.email, membershipToken };
   })
 });
 

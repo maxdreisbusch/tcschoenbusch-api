@@ -560,78 +560,6 @@ var updateReservationSchema = {
   radiator: z6.boolean().optional()
 };
 
-// src/plugins/paypal.ts
-import axios from "axios";
-var { PAYPAL_URL, PAYPAL_ID, PAYPAL_SECRET } = env;
-var paypalClient = axios.create({ baseURL: PAYPAL_URL });
-var generatePaypalToken = async () => {
-  const auth = Buffer.from(`${PAYPAL_ID}:${PAYPAL_SECRET}`).toString("base64");
-  const res = await paypalClient.post("/v1/oauth2/token", "grant_type=client_credentials", {
-    headers: { Authorization: `Basic ${auth}` }
-  });
-  return res.data.access_token;
-};
-var createPurchaseItem = (title, value, taxRate, currency_code = "eur", quantity = "1") => {
-  const taxValue = getTaxValueFromGross(value, taxRate);
-  return {
-    name: title,
-    quantity,
-    unit_amount: {
-      currency_code,
-      value: (value - taxValue).toFixed(2).toString()
-    },
-    tax: {
-      currency_code,
-      value: taxValue.toFixed(2).toString()
-    },
-    category: "DIGITAL_GOODS"
-  };
-};
-var createAmount = (items, currency_code = "eur", discount = 0) => {
-  let netTotal = 0;
-  let taxTotal = 0;
-  for (const i of items) {
-    netTotal += parseFloat(i.unit_amount.value) * parseFloat(i.quantity);
-    taxTotal += i.tax ? parseFloat(i.tax.value) * parseFloat(i.quantity) : 0;
-  }
-  return {
-    currency_code,
-    value: (netTotal + taxTotal - discount).toFixed(2),
-    breakdown: {
-      item_total: { currency_code, value: netTotal.toFixed(2) },
-      tax_total: { currency_code, value: taxTotal.toFixed(2) },
-      discount: { currency_code, value: discount.toFixed(2) }
-    }
-  };
-};
-var createOrder = async (purchaseItems, currency_code = "eur", discount = 0) => {
-  console.log("I am here 1");
-  const token = await generatePaypalToken();
-  console.log("I am here 2");
-  const body = {
-    intent: "CAPTURE",
-    purchase_units: [
-      {
-        description: "Platzbuchung beim TC Sch\xF6nbusch",
-        items: purchaseItems,
-        amount: createAmount(purchaseItems, currency_code, discount)
-      }
-    ]
-  };
-  console.log("I am here 100");
-  const res = await paypalClient.post("/v2/checkout/orders", body, {
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
-  });
-  return res.data;
-};
-var capturePayment = async (orderId) => {
-  const accessToken = await generatePaypalToken();
-  const res = await paypalClient.post(`/v2/checkout/orders/${orderId}/capture`, void 0, {
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` }
-  });
-  return res.data;
-};
-
 // src/utils/ruleCheckPlugins/maxBookingsAtSameTime.ts
 var checkMaxBookingsAtSameTime = async (reservation, values) => {
   const [hoursAround, maxBookings] = values.split(";");
@@ -747,6 +675,102 @@ var transactionRouter = createTRPCRouter({
     });
   })
 });
+
+// src/plugins/paypal-v9.ts
+import {
+  ApiError,
+  CheckoutPaymentIntent,
+  Client,
+  Environment,
+  ItemCategory,
+  LogLevel,
+  OrdersController
+} from "@paypal/paypal-server-sdk";
+var { PAYPAL_ID, PAYPAL_SECRET, NODE_ENV } = env;
+var client = new Client({
+  clientCredentialsAuthCredentials: {
+    oAuthClientId: PAYPAL_ID,
+    oAuthClientSecret: PAYPAL_SECRET
+  },
+  timeout: 0,
+  environment: NODE_ENV === "production" ? Environment.Production : Environment.Sandbox,
+  logging: {
+    logLevel: LogLevel.Info,
+    logRequest: {
+      logBody: true
+    },
+    logResponse: {
+      logHeaders: true
+    }
+  }
+});
+var ordersController = new OrdersController(client);
+var createOrder = async (purchaseItems, currency_code = "eur", discount = 0, returnUrl, cancelUrl) => {
+  const experienceContext = returnUrl && cancelUrl ? { returnUrl, cancelUrl } : void 0;
+  const collect = {
+    body: {
+      intent: CheckoutPaymentIntent.Capture,
+      purchaseUnits: [
+        {
+          description: "Platzbuchung beim TC Sch\xF6nbusch",
+          items: purchaseItems,
+          amount: createAmount(purchaseItems, currency_code, discount)
+        }
+      ],
+      paymentSource: {
+        card: { experienceContext },
+        paypal: { experienceContext },
+        applePay: { experienceContext },
+        googlePay: { experienceContext }
+      }
+    },
+    prefer: "return=minimal"
+  };
+  try {
+    const { result } = await ordersController.createOrder(collect);
+    return result;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      const errors = error.result;
+      console.error(errors);
+    }
+    return void 0;
+  }
+};
+var capturePayment = (id) => ordersController.captureOrder({ id });
+var createPurchaseItem = (title, value, taxRate, currencyCode = "eur", quantity = "1") => {
+  const taxValue = getTaxValueFromGross(value, taxRate);
+  return {
+    name: title,
+    quantity,
+    unitAmount: {
+      currencyCode,
+      value: (value - taxValue).toFixed(2).toString()
+    },
+    tax: {
+      currencyCode,
+      value: taxValue.toFixed(2).toString()
+    },
+    category: ItemCategory.DigitalGoods
+  };
+};
+var createAmount = (items, currencyCode = "eur", discount = 0) => {
+  let netTotal = 0;
+  let taxTotal = 0;
+  for (const i of items) {
+    netTotal += parseFloat(i.unitAmount.value) * parseFloat(i.quantity);
+    taxTotal += i.tax ? parseFloat(i.tax.value) * parseFloat(i.quantity) : 0;
+  }
+  return {
+    currencyCode,
+    value: (netTotal + taxTotal - discount).toFixed(2),
+    breakdown: {
+      itemTotal: { currencyCode, value: netTotal.toFixed(2) },
+      taxTotal: { currencyCode, value: taxTotal.toFixed(2) },
+      discount: { currencyCode, value: discount.toFixed(2) }
+    }
+  };
+};
 
 // src/router/routers/reservation.ts
 var normalizeTime = (date) => DateTime2.fromJSDate(date).set({ second: 0, millisecond: 0 }).toJSDate();
@@ -913,7 +937,7 @@ var reservationRouter = createTRPCRouter({
       return await ctx.prisma.reservation.create({ data: reservationData });
     }
   }),
-  payForReservation: roleCheckProcedure(routerName4, "payForReservation").input(z9.object({ reservationId: z9.string(), useHallencard: z9.boolean() })).mutation(async ({ input, ctx }) => {
+  payForReservation: roleCheckProcedure(routerName4, "payForReservation").input(z9.object({ reservationId: z9.string(), useHallencard: z9.boolean(), returnUrl: z9.string().optional(), cancelUrl: z9.string().optional() })).mutation(async ({ input, ctx }) => {
     const reservation = await ctx.prisma.reservation.findUnique({
       where: { id: input.reservationId },
       include: { court: { select: { name: true } } }
@@ -969,11 +993,11 @@ var reservationRouter = createTRPCRouter({
         "1"
       )
     );
-    const paypalTransaction = await createOrder(purchaseItems, currencyCode, discount);
+    const paypalTransaction = await createOrder(purchaseItems, currencyCode, discount, input.returnUrl, input.cancelUrl);
     await ctx.prisma.reservation.update({
       where: { id: reservation.id },
       data: {
-        paypalTransactionId: paypalTransaction.id
+        paypalTransactionId: paypalTransaction?.id
       }
     });
     return { reservation: void 0, paypalTransaction };
@@ -987,11 +1011,12 @@ var reservationRouter = createTRPCRouter({
       });
     try {
       const order = await capturePayment(input);
-      if (order.status !== "COMPLETED" || !order.purchase_units || order.purchase_units.length === 0 || order.purchase_units[0] == void 0)
+      if (order.result.status !== "COMPLETED" || !order.result.purchaseUnits || order.result.purchaseUnits.length === 0 || order.result.purchaseUnits[0] == void 0)
         throw new Error();
-      const captures = order.purchase_units[0].payments?.captures;
+      const captures = order.result.purchaseUnits[0].payments?.captures;
       if (!captures || captures[0]?.status !== "COMPLETED") throw new Error();
       const amount = captures[0].amount;
+      if (!amount) return;
       await ctx.prisma.reservation.update({
         where: { id: reservation.id },
         data: {
@@ -1002,14 +1027,14 @@ var reservationRouter = createTRPCRouter({
               {
                 userId: reservation.ownerId,
                 value: (reservation.price ?? 0) * -1,
-                currency: amount.currency_code,
+                currency: amount.currencyCode,
                 reason: "COURT_RESERVATION" /* COURT_RESERVATION */,
                 createdAt: reservation.createdAt
               },
               {
                 userId: reservation.ownerId,
                 value: parseFloat(amount.value),
-                currency: amount.currency_code,
+                currency: amount.currencyCode,
                 reason: "ONLINE_PAYMENT" /* ONLINE_PAYMENT */,
                 paymentInformation: `paypal:${input}`
               }

@@ -230,7 +230,7 @@ export const reservationRouter = createTRPCRouter({
 		}),
 
 	payForReservation: roleCheckProcedure(routerName, 'payForReservation')
-		.input(z.object({ reservationId: z.string(), useHallencard: z.boolean() }))
+		.input(z.object({ reservationId: z.string(), useHallencard: z.boolean(), returnUrl: z.string().optional(), cancelUrl: z.string().optional() }))
 		.mutation(async ({ input, ctx }) => {
 			const reservation = await ctx.prisma.reservation.findUnique({
 				where: { id: input.reservationId },
@@ -295,7 +295,7 @@ export const reservationRouter = createTRPCRouter({
 				)
 			);
 
-			const paypalTransaction = await createOrder(purchaseItems, currencyCode, discount);
+			const paypalTransaction = await createOrder(purchaseItems, currencyCode, discount, input.returnUrl, input.cancelUrl);
 			await ctx.prisma.reservation.update({
 				where: { id: reservation.id },
 				data: {

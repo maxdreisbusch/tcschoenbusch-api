@@ -1,6 +1,6 @@
 import * as _trpc_server from '@trpc/server';
 import { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
-import * as _paypal_paypal_js from '@paypal/paypal-js';
+import * as _paypal_paypal_server_sdk from '@paypal/paypal-server-sdk';
 import { A as ApplicationDialogPermission } from './applicationDialogPermissions-DEOexf28.js';
 import { NotificationSeverity, PermissionState, ReservationType, ReservationRuleCheckOn, TeamCategory, TransactionReason } from './databaseTypes.js';
 import { H as HallencardStatus } from './hallencard-BBLfHFZf.js';
@@ -1530,6 +1530,8 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
             input: {
                 reservationId: string;
                 useHallencard: boolean;
+                returnUrl?: string | undefined;
+                cancelUrl?: string | undefined;
             };
             output: {
                 reservation: {
@@ -1553,13 +1555,13 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
                 paypalTransaction: undefined;
             } | {
                 reservation: undefined;
-                paypalTransaction: _paypal_paypal_js.OrderResponseBody;
+                paypalTransaction: _paypal_paypal_server_sdk.Order | undefined;
             };
             meta: object;
         }>;
         checkPaymentStatus: _trpc_server.TRPCMutationProcedure<{
             input: string;
-            output: {};
+            output: {} | undefined;
             meta: object;
         }>;
         paymentCanceled: _trpc_server.TRPCMutationProcedure<{

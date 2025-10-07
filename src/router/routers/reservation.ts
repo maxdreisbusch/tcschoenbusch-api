@@ -506,11 +506,21 @@ export const reservationRouter = createTRPCRouter({
 	}),
 
 	getEmptyCourts: roleCheckProcedure(routerName, 'get')
-		.input(z.object({ areaId: z.number(), start: z.date().min(new Date()), end: z.date().min(new Date()) }))
+		.input(
+			z.object({
+				areaId: z.number().optional().nullable(),
+				start: z.date().min(new Date()).optional().nullable(),
+				end: z.date().min(new Date()).optional().nullable(),
+			})
+		)
 		.query(async ({ input, ctx }) => {
 			const { areaId, start, end } = input;
 
+			if (!areaId || !start || !end) return [];
+
 			const availableCourts = await ctx.prisma.court.findMany({
+				select: { id: true, name: true, shortName: true, order: true },
+				orderBy: { order: 'asc' },
 				where: {
 					//court needs to be active
 					active: true,

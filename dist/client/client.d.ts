@@ -1589,20 +1589,15 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
         }>;
         getEmptyCourts: _trpc_server.TRPCQueryProcedure<{
             input: {
-                areaId: number;
-                start: Date;
-                end: Date;
+                areaId?: number | null | undefined;
+                start?: Date | null | undefined;
+                end?: Date | null | undefined;
             };
             output: {
                 name: string;
-                description: string | null;
-                areaId: number;
                 id: string;
                 shortName: string | null;
-                activeFrom: Date | null;
-                activeTo: Date | null;
                 order: number | null;
-                active: boolean;
             }[];
             meta: object;
         }>;

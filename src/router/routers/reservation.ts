@@ -1,12 +1,9 @@
-import type { AmountWithCurrencyCode, PurchaseItem } from '@paypal/paypal-js';
 import { AbonnementStatus, PermissionState, ReservationRuleCheckOn, ReservationStatus } from 'db/databaseTypes';
 import { TransactionReason } from 'db/databaseTypes';
 import { TRPCError } from '@trpc/server';
 import { DateTime } from 'luxon';
 import { z } from 'zod';
-
 import { createReservationSchema, getPriceSchema } from 'schemes/reservation';
-import { capturePayment, createOrder, createPurchaseItem } from '../../plugins/paypal';
 import {
 	addDays,
 	endOfDay,
@@ -27,6 +24,7 @@ import { createTRPCRouter, publicProcedure, roleCheckProcedure } from '..';
 
 import { transactionRouter } from './transaction';
 import { ReservationRawData } from 'utils/ruleCheckPlugins/type';
+import { capturePayment, createOrder, createPurchaseItem } from 'plugins/paypal-v9';
 
 const normalizeTime = (date: Date) => DateTime.fromJSDate(date).set({ second: 0, millisecond: 0 }).toJSDate();
 const isAvailable = async (start: Date, end: Date, courtId: string) =>
@@ -283,7 +281,7 @@ export const reservationRouter = createTRPCRouter({
 
 			//Start paypal transaction process
 			const currencyCode = 'EUR';
-			const purchaseItems: Array<PurchaseItem> = [];
+			const purchaseItems = [];
 			purchaseItems.push(
 				createPurchaseItem(
 					`${reservation.court?.name ?? ''} am ${format(reservation.start, 'dd.MM.yyyy')} um ${format(reservation.start, 'HH:mm')} - ${format(
@@ -301,7 +299,7 @@ export const reservationRouter = createTRPCRouter({
 			await ctx.prisma.reservation.update({
 				where: { id: reservation.id },
 				data: {
-					paypalTransactionId: paypalTransaction.id,
+					paypalTransactionId: paypalTransaction?.id,
 				},
 			});
 
@@ -322,12 +320,18 @@ export const reservationRouter = createTRPCRouter({
 			try {
 				const order = await capturePayment(input);
 
-				if (order.status !== 'COMPLETED' || !order.purchase_units || order.purchase_units.length === 0 || order.purchase_units[0] == undefined)
+				if (
+					order.result.status !== 'COMPLETED' ||
+					!order.result.purchaseUnits ||
+					order.result.purchaseUnits.length === 0 ||
+					order.result.purchaseUnits[0] == undefined
+				)
 					throw new Error();
 
-				const captures = order.purchase_units[0].payments?.captures;
+				const captures = order.result.purchaseUnits[0].payments?.captures;
 				if (!captures || captures[0]?.status !== 'COMPLETED') throw new Error();
-				const amount = captures[0].amount as AmountWithCurrencyCode;
+				const amount = captures[0].amount;
+				if (!amount) return;
 
 				await ctx.prisma.reservation.update({
 					where: { id: reservation.id },
@@ -339,14 +343,14 @@ export const reservationRouter = createTRPCRouter({
 								{
 									userId: reservation.ownerId,
 									value: (reservation.price ?? 0) * -1,
-									currency: amount.currency_code,
+									currency: amount.currencyCode,
 									reason: TransactionReason.COURT_RESERVATION,
 									createdAt: reservation.createdAt,
 								},
 								{
 									userId: reservation.ownerId,
 									value: parseFloat(amount.value),
-									currency: amount.currency_code,
+									currency: amount.currencyCode,
 									reason: TransactionReason.ONLINE_PAYMENT,
 									paymentInformation: `paypal:${input}`,
 								},

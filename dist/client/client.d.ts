@@ -860,7 +860,7 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
                 name: string | null;
                 email: string | null;
                 membershipToken: string;
-            };
+            } | undefined;
             meta: object;
         }>;
     }>>;
@@ -1585,6 +1585,25 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
         deleteUnapproved: _trpc_server.TRPCQueryProcedure<{
             input: void;
             output: boolean;
+            meta: object;
+        }>;
+        getEmptyCourts: _trpc_server.TRPCQueryProcedure<{
+            input: {
+                areaId: number;
+                start: Date;
+                end: Date;
+            };
+            output: {
+                name: string;
+                description: string | null;
+                areaId: number;
+                id: string;
+                shortName: string | null;
+                activeFrom: Date | null;
+                activeTo: Date | null;
+                order: number | null;
+                active: boolean;
+            }[];
             meta: object;
         }>;
     }>>;

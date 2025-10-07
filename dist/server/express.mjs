@@ -1138,6 +1138,31 @@ var reservationRouter = createTRPCRouter({
       data: { deletedAt: /* @__PURE__ */ new Date() }
     });
     return true;
+  }),
+  getEmptyCourts: roleCheckProcedure(routerName4, "get").input(z9.object({ areaId: z9.number(), start: z9.date().min(/* @__PURE__ */ new Date()), end: z9.date().min(/* @__PURE__ */ new Date()) })).query(async ({ input, ctx }) => {
+    const { areaId, start, end } = input;
+    const availableCourts = await ctx.prisma.court.findMany({
+      where: {
+        //court needs to be active
+        active: true,
+        OR: [
+          { activeFrom: { lt: start }, activeTo: { gt: start } },
+          { activeFrom: null, activeTo: null }
+        ],
+        //and also area needs to be active
+        area: {
+          id: areaId,
+          OR: [
+            { activeFrom: { lt: start }, activeTo: { gt: start } },
+            { activeFrom: null, activeTo: null }
+          ]
+        },
+        reservations: {
+          none: { OR: getBookingWhereClause(start, end) }
+        }
+      }
+    });
+    return availableCourts;
   })
 });
 var getBookingWhereClause = (startTime, endTime) => [

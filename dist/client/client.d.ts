@@ -1561,7 +1561,7 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
             };
             meta: object;
         }>;
-        myChannels: _trpc_server.TRPCMutationProcedure<{
+        myChannels: _trpc_server.TRPCQueryProcedure<{
             input: string;
             output: ({
                 channels: {

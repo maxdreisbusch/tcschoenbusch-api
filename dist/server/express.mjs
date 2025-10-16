@@ -10,7 +10,8 @@ var envSchema = z.object({
   TOKEN_AUDIENCE: z.string(),
   TOKEN_ISSUER: z.string(),
   NODE_ENV: z.string().optional().default("PROD"),
-  PORT: z.string().default("4000")
+  PORT: z.string().default("4000"),
+  EXPO_PUSHNOTIFICATIONS_PAT: z.string().optional()
 });
 var parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
@@ -2690,7 +2691,7 @@ var pushNotificationChannelRouter = createTRPCRouter({
 import { z as z41 } from "zod";
 import { Expo } from "expo-server-sdk";
 var expo = new Expo({
-  accessToken: ""
+  accessToken: env.EXPO_PUSHNOTIFICATIONS_PAT
 });
 var PushNotificationSchema = z41.object({
   title: z41.string(),
@@ -2715,22 +2716,20 @@ var sendNotifications = async (messages) => {
   const deleteTokens = [];
   const tickets = [];
   const chunks = await expo.chunkPushNotifications(messages);
-  (async () => {
-    for (const chunk of chunks) {
-      try {
-        const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-        tickets.push(...ticketChunk);
-      } catch (error) {
-        console.error(error);
-      }
+  for (const chunk of chunks) {
+    try {
+      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+      tickets.push(...ticketChunk);
+    } catch (error) {
+      console.error(error);
     }
-    for (const ticket of tickets) {
-      if (ticket.status === "ok") return;
-      if (ticket.details?.error === "DeviceNotRegistered" && ticket.details.expoPushToken) deleteTokens.push(ticket.details.expoPushToken);
-      else if ((ticket.details?.error === "ExpoError" || ticket.details?.error === "MessageRateExceeded") && ticket.details.expoPushToken)
-        repushTokens.push(ticket.details.expoPushToken);
-    }
-  })();
+  }
+  for (const ticket of tickets) {
+    if (ticket.status === "ok") return;
+    if (ticket.details?.error === "DeviceNotRegistered" && ticket.details.expoPushToken) deleteTokens.push(ticket.details.expoPushToken);
+    else if ((ticket.details?.error === "ExpoError" || ticket.details?.error === "MessageRateExceeded") && ticket.details.expoPushToken)
+      repushTokens.push(ticket.details.expoPushToken);
+  }
   return { repushTokens, deleteTokens };
 };
 var routerName24 = "pushNotificationRouter";
@@ -2744,8 +2743,9 @@ var pushNotificationsRouter = createTRPCRouter({
       channelSubscribers.map((s) => s.id)
     );
     const messageResults = await sendNotifications(messages);
-    await ctx.prisma.expoPushTokens.deleteMany({ where: { id: { in: messageResults.deleteTokens } } });
-    if (messageResults.repushTokens.length > 0)
+    if (messageResults && messageResults.deleteTokens.length > 0)
+      await ctx.prisma.expoPushTokens.deleteMany({ where: { id: { in: messageResults.deleteTokens } } });
+    if (messageResults && messageResults.repushTokens.length > 0)
       await sendNotifications(generateMessages(notification.title, notification.message, messageResults.repushTokens));
     return notification;
   }),
@@ -2797,8 +2797,20 @@ var SubscribeChannelRequestSchema = z42.object({ expoPushToken: z42.string(), ch
 var pushTokenRouter = createTRPCRouter({
   create: publicProcedure.input(z42.string()).mutation(async ({ input, ctx }) => {
     if (!Expo2.isExpoPushToken(input)) throw new TRPCError8({ code: "BAD_REQUEST", message: `Push token ${input} is not a valid Expo push token` });
+    const grantedRoles = ctx.session?.roles?.map((id) => ({ id }));
+    const availableChannels = await ctx.prisma.pushNotificationChannel.findMany({
+      select: { id: true },
+      where: { OR: [{ isPublic: true }, { grantedUserRoles: { some: { OR: grantedRoles } } }] }
+    });
     return await ctx.prisma.expoPushTokens.create({
-      data: { id: input, userId: ctx.session?.id }
+      data: { id: input, userId: ctx.session?.id, channels: { connect: availableChannels } }
+    });
+  }),
+  myChannels: publicProcedure.input(z42.string()).mutation(async ({ input, ctx }) => {
+    if (!Expo2.isExpoPushToken(input)) throw new TRPCError8({ code: "BAD_REQUEST", message: `Push token ${input} is not a valid Expo push token` });
+    return await ctx.prisma.expoPushTokens.findUnique({
+      where: { id: input },
+      include: { channels: { select: { id: true } } }
     });
   }),
   subscribeChannel: publicProcedure.input(SubscribeChannelRequestSchema).mutation(async ({ input, ctx }) => {

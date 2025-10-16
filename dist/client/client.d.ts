@@ -1561,6 +1561,18 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
             };
             meta: object;
         }>;
+        myChannels: _trpc_server.TRPCMutationProcedure<{
+            input: string;
+            output: ({
+                channels: {
+                    id: string;
+                }[];
+            } & {
+                id: string;
+                userId: string | null;
+            }) | null;
+            meta: object;
+        }>;
         subscribeChannel: _trpc_server.TRPCMutationProcedure<{
             input: {
                 channelId: string;

@@ -9,8 +9,22 @@ export const pushTokenRouter = createTRPCRouter({
 	create: publicProcedure.input(z.string()).mutation(async ({ input, ctx }) => {
 		if (!Expo.isExpoPushToken(input)) throw new TRPCError({ code: 'BAD_REQUEST', message: `Push token ${input} is not a valid Expo push token` });
 
+		const grantedRoles = ctx.session?.roles?.map((id) => ({ id }));
+		const availableChannels = await ctx.prisma.pushNotificationChannel.findMany({
+			select: { id: true },
+			where: { OR: [{ isPublic: true }, { grantedUserRoles: { some: { OR: grantedRoles } } }] },
+		});
+
 		return await ctx.prisma.expoPushTokens.create({
-			data: { id: input, userId: ctx.session?.id },
+			data: { id: input, userId: ctx.session?.id, channels: { connect: availableChannels } },
+		});
+	}),
+	myChannels: publicProcedure.input(z.string()).mutation(async ({ input, ctx }) => {
+		if (!Expo.isExpoPushToken(input)) throw new TRPCError({ code: 'BAD_REQUEST', message: `Push token ${input} is not a valid Expo push token` });
+
+		return await ctx.prisma.expoPushTokens.findUnique({
+			where: { id: input },
+			include: { channels: { select: { id: true } } },
 		});
 	}),
 

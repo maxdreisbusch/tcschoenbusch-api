@@ -2806,6 +2806,11 @@ var pushTokenRouter = createTRPCRouter({
       data: { id: input, userId: ctx.session?.id, channels: { connect: availableChannels } }
     });
   }),
+  isRegistered: publicProcedure.input(z42.string()).mutation(async ({ input, ctx }) => {
+    if (!Expo2.isExpoPushToken(input)) throw new TRPCError8({ code: "BAD_REQUEST", message: `Push token ${input} is not a valid Expo push token` });
+    const isRegistered = await ctx.prisma.expoPushTokens.count({ where: { id: input } });
+    return isRegistered > 0;
+  }),
   myChannels: publicProcedure.input(z42.string()).query(async ({ input, ctx }) => {
     if (!Expo2.isExpoPushToken(input)) throw new TRPCError8({ code: "BAD_REQUEST", message: `Push token ${input} is not a valid Expo push token` });
     return await ctx.prisma.expoPushTokens.findUnique({

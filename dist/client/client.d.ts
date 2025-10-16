@@ -1407,6 +1407,183 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
             meta: object;
         }>;
     }>>;
+    pushNotificationChannel: _trpc_server.TRPCBuiltRouter<{
+        ctx: {
+            session: AppSessionUser | null;
+            prisma: _prisma_client.PrismaClient<{
+                log: ("query" | "warn" | "error")[];
+            }, never, _prisma_client_runtime_library.DefaultArgs>;
+        };
+        meta: object;
+        errorShape: _trpc_server.TRPCDefaultErrorShape;
+        transformer: true;
+    }, _trpc_server.TRPCDecorateCreateRouterOptions<{
+        create: _trpc_server.TRPCMutationProcedure<{
+            input: {
+                title: string;
+                grantedUserRoles: number[];
+                id?: string | undefined;
+                isPublic?: boolean | undefined;
+            };
+            output: {
+                id: string;
+                title: string;
+                isPublic: boolean;
+            };
+            meta: object;
+        }>;
+        list: _trpc_server.TRPCQueryProcedure<{
+            input: void;
+            output: {
+                id: string;
+                title: string;
+                isPublic: boolean;
+            }[];
+            meta: object;
+        }>;
+        listPublic: _trpc_server.TRPCQueryProcedure<{
+            input: void;
+            output: {
+                id: string;
+                title: string;
+                isPublic: boolean;
+            }[];
+            meta: object;
+        }>;
+        get: _trpc_server.TRPCQueryProcedure<{
+            input: string;
+            output: ({
+                grantedUserRoles: {
+                    id: number;
+                }[];
+            } & {
+                id: string;
+                title: string;
+                isPublic: boolean;
+            }) | null;
+            meta: object;
+        }>;
+        update: _trpc_server.TRPCMutationProcedure<{
+            input: {
+                title: string;
+                grantedUserRoles: number[];
+                id?: string | undefined;
+                isPublic?: boolean | undefined;
+            };
+            output: {
+                id: string;
+                title: string;
+                isPublic: boolean;
+            };
+            meta: object;
+        }>;
+        delete: _trpc_server.TRPCMutationProcedure<{
+            input: string;
+            output: {
+                id: string;
+                title: string;
+                isPublic: boolean;
+            };
+            meta: object;
+        }>;
+    }>>;
+    pushNotifications: _trpc_server.TRPCBuiltRouter<{
+        ctx: {
+            session: AppSessionUser | null;
+            prisma: _prisma_client.PrismaClient<{
+                log: ("query" | "warn" | "error")[];
+            }, never, _prisma_client_runtime_library.DefaultArgs>;
+        };
+        meta: object;
+        errorShape: _trpc_server.TRPCDefaultErrorShape;
+        transformer: true;
+    }, _trpc_server.TRPCDecorateCreateRouterOptions<{
+        create: _trpc_server.TRPCMutationProcedure<{
+            input: {
+                message: string;
+                title: string;
+                channelId: string;
+            };
+            output: {
+                message: string;
+                id: string;
+                title: string;
+                channelId: string;
+            };
+            meta: object;
+        }>;
+        list: _trpc_server.TRPCQueryProcedure<{
+            input: string;
+            output: {
+                message: string;
+                id: string;
+                title: string;
+                channelId: string;
+            }[];
+            meta: object;
+        }>;
+        listByChannelId: _trpc_server.TRPCQueryProcedure<{
+            input: string;
+            output: {
+                message: string;
+                id: string;
+                title: string;
+                channelId: string;
+            }[];
+            meta: object;
+        }>;
+        listPublic: _trpc_server.TRPCQueryProcedure<{
+            input: string;
+            output: {
+                id: string;
+                title: string;
+                isPublic: boolean;
+            }[];
+            meta: object;
+        }>;
+    }>>;
+    pushTokens: _trpc_server.TRPCBuiltRouter<{
+        ctx: {
+            session: AppSessionUser | null;
+            prisma: _prisma_client.PrismaClient<{
+                log: ("query" | "warn" | "error")[];
+            }, never, _prisma_client_runtime_library.DefaultArgs>;
+        };
+        meta: object;
+        errorShape: _trpc_server.TRPCDefaultErrorShape;
+        transformer: true;
+    }, _trpc_server.TRPCDecorateCreateRouterOptions<{
+        create: _trpc_server.TRPCMutationProcedure<{
+            input: string;
+            output: {
+                id: string;
+                userId: string | null;
+            };
+            meta: object;
+        }>;
+        subscribeChannel: _trpc_server.TRPCMutationProcedure<{
+            input: {
+                channelId: string;
+                expoPushToken: string;
+            };
+            output: {
+                id: string;
+                userId: string | null;
+            };
+            meta: object;
+        }>;
+        unsubscribeChannel: _trpc_server.TRPCMutationProcedure<{
+            input: {
+                channelId: string;
+                expoPushToken: string;
+            };
+            output: {
+                id: string;
+                userId: string | null;
+            };
+            meta: object;
+        }>;
+    }>>;
     reservation: _trpc_server.TRPCBuiltRouter<{
         ctx: {
             session: AppSessionUser | null;
@@ -2222,6 +2399,7 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
                     users: number;
                     prices: number;
                     reservationRules: number;
+                    pushNotificationChannels: number;
                 };
                 title: string;
             }[];
@@ -2237,6 +2415,7 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
                     users: number;
                     prices: number;
                     reservationRules: number;
+                    pushNotificationChannels: number;
                 };
                 title: string;
                 isDefault: boolean;

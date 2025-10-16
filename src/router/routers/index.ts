@@ -21,6 +21,9 @@ import { transactionRouter } from './transaction';
 import { userRouter } from './user';
 import { userRoleRouter } from './userRole';
 import { membershipRouter } from './membership';
+import { pushNotificationChannelRouter } from './pushNotificationChannels';
+import { pushNotificationsRouter } from './pushNotifications';
+import { pushTokenRouter } from './pushTokens';
 
 /**
  * This is the primary router for your server.
@@ -42,6 +45,9 @@ export const appRouter = createTRPCRouter({
 	organisationMembers: organisationMembersRouter,
 	permission: permissionRouter,
 	price: priceRouter,
+	pushNotificationChannel: pushNotificationChannelRouter,
+	pushNotifications: pushNotificationsRouter,
+	pushTokens: pushTokenRouter,
 	reservation: reservationRouter,
 	reservationRule: reservationRuleRouter,
 	season: seasonRouter,

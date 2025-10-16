@@ -11,7 +11,8 @@ const envSchema = z.object({
 	TOKEN_AUDIENCE: z.string(),
 	TOKEN_ISSUER: z.string(),
 	NODE_ENV: z.string().optional().default('PROD'),
-	PORT: z.string().default('3000'),
+	PORT: z.string().default('4000'),
+	EXPO_PUSHNOTIFICATIONS_PAT: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

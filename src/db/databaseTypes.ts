@@ -76,6 +76,7 @@ export interface User {
   transactions?: Transaction[];
   teams?: TeamMember[];
   leadTeams?: TeamSeason[];
+  expoPushTokens?: ExpoPushTokens[];
   roles?: UserRole[];
   likedEvents?: Event[];
 }
@@ -176,6 +177,7 @@ export interface UserRole {
   users?: User[];
   prices?: Price[];
   reservationRules?: ReservationRule[];
+  pushNotificationChannels?: PushNotificationChannel[];
   priority: number;
 }
 
@@ -350,4 +352,28 @@ export interface Event {
   category?: EventCategory;
   categoryId: string;
   likedByUsers?: User[];
+}
+
+export interface PushNotificationChannel {
+  id: string;
+  title: string;
+  isPublic: boolean;
+  grantedUserRoles?: UserRole[];
+  notifications?: PushNotification[];
+  subscribers?: ExpoPushTokens[];
+}
+
+export interface ExpoPushTokens {
+  id: string;
+  channels?: PushNotificationChannel[];
+  user?: User | null;
+  userId: string | null;
+}
+
+export interface PushNotification {
+  id: string;
+  title: string;
+  message: string;
+  channel?: PushNotificationChannel;
+  channelId: string;
 }

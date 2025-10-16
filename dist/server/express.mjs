@@ -10,7 +10,7 @@ var envSchema = z.object({
   TOKEN_AUDIENCE: z.string(),
   TOKEN_ISSUER: z.string(),
   NODE_ENV: z.string().optional().default("PROD"),
-  PORT: z.string().default("3000")
+  PORT: z.string().default("4000")
 });
 var parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
@@ -2642,6 +2642,182 @@ var membershipRouter = createTRPCRouter({
   })
 });
 
+// src/router/routers/pushNotificationChannels.ts
+import { z as z40 } from "zod";
+var PushNotificationChannelSchema = z40.object({
+  id: z40.string().cuid().optional(),
+  title: z40.string(),
+  isPublic: z40.boolean().default(true),
+  grantedUserRoles: z40.number().array()
+});
+var routerName23 = "pushNotificationChannelRouter";
+var pushNotificationChannelRouter = createTRPCRouter({
+  create: roleCheckProcedure(routerName23, "create").input(PushNotificationChannelSchema).mutation(async ({ input, ctx }) => {
+    const { title, isPublic, grantedUserRoles } = input;
+    const grantedRoles = grantedUserRoles.map((id) => ({ id }));
+    return await ctx.prisma.pushNotificationChannel.create({
+      data: { title, isPublic, grantedUserRoles: { connect: grantedRoles } }
+    });
+  }),
+  list: roleCheckProcedure(routerName23, "list").query(async ({ ctx }) => {
+    if (ctx.permission === "ALL" /* ALL */) return await ctx.prisma.pushNotificationChannel.findMany();
+    const grantedRoles = ctx.session.roles?.map((id) => ({ id }));
+    const items = await ctx.prisma.pushNotificationChannel.findMany({
+      where: { OR: [{ isPublic: true }, { grantedUserRoles: { some: { OR: grantedRoles } } }] }
+    });
+    return items;
+  }),
+  listPublic: publicProcedure.query(async ({ ctx }) => await ctx.prisma.pushNotificationChannel.findMany({ where: { isPublic: true } })),
+  get: roleCheckProcedure(routerName23, "get").input(z40.string()).query(({ ctx, input }) => {
+    return ctx.prisma.pushNotificationChannel.findUnique({ where: { id: input }, include: { grantedUserRoles: { select: { id: true } } } });
+  }),
+  update: roleCheckProcedure(routerName23, "update").input(PushNotificationChannelSchema).mutation(({ input, ctx }) => {
+    const { id, grantedUserRoles, ...data } = input;
+    const grantedRoles = grantedUserRoles.map((id2) => ({ id: id2 }));
+    return ctx.prisma.pushNotificationChannel.update({
+      where: { id },
+      data: { ...data, grantedUserRoles: { connect: grantedRoles } }
+    });
+  }),
+  delete: roleCheckProcedure(routerName23, "delete").input(z40.string().cuid()).mutation(({ input, ctx }) => {
+    return ctx.prisma.pushNotificationChannel.delete({
+      where: { id: input }
+    });
+  })
+});
+
+// src/router/routers/pushNotifications.ts
+import { z as z41 } from "zod";
+import { Expo } from "expo-server-sdk";
+var expo = new Expo({
+  accessToken: ""
+});
+var PushNotificationSchema = z41.object({
+  title: z41.string(),
+  message: z41.string(),
+  channelId: z41.string().cuid()
+});
+var generateMessages = (title, body, tokens) => {
+  const messages = [];
+  const message = {
+    sound: "default",
+    title,
+    body
+    // richContent: {
+    // 	image: 'https://example.com/statics/some-image-here-if-you-want.jpg',
+    // },
+  };
+  for (const token of tokens) messages.push({ ...message, to: token });
+  return messages;
+};
+var sendNotifications = async (messages) => {
+  const repushTokens = [];
+  const deleteTokens = [];
+  const tickets = [];
+  const chunks = await expo.chunkPushNotifications(messages);
+  (async () => {
+    for (const chunk of chunks) {
+      try {
+        const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+        tickets.push(...ticketChunk);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    for (const ticket of tickets) {
+      if (ticket.status === "ok") return;
+      if (ticket.details?.error === "DeviceNotRegistered" && ticket.details.expoPushToken) deleteTokens.push(ticket.details.expoPushToken);
+      else if ((ticket.details?.error === "ExpoError" || ticket.details?.error === "MessageRateExceeded") && ticket.details.expoPushToken)
+        repushTokens.push(ticket.details.expoPushToken);
+    }
+  })();
+  return { repushTokens, deleteTokens };
+};
+var routerName24 = "pushNotificationRouter";
+var pushNotificationsRouter = createTRPCRouter({
+  create: roleCheckProcedure(routerName24, "create").input(PushNotificationSchema).mutation(async ({ input, ctx }) => {
+    const notification = await ctx.prisma.pushNotification.create({ data: input });
+    const channelSubscribers = await ctx.prisma.expoPushTokens.findMany({ where: { channels: { some: { id: input.channelId } } } });
+    const messages = generateMessages(
+      notification.title,
+      notification.message,
+      channelSubscribers.map((s) => s.id)
+    );
+    const messageResults = await sendNotifications(messages);
+    await ctx.prisma.expoPushTokens.deleteMany({ where: { id: { in: messageResults.deleteTokens } } });
+    if (messageResults.repushTokens.length > 0)
+      await sendNotifications(generateMessages(notification.title, notification.message, messageResults.repushTokens));
+    return notification;
+  }),
+  list: roleCheckProcedure(routerName24, "list").input(z41.string()).query(async ({ input, ctx }) => {
+    if (ctx.permission === "ALL" /* ALL */)
+      return await ctx.prisma.pushNotification.findMany({
+        where: {
+          channel: {
+            subscribers: {
+              some: { id: input }
+            }
+          }
+        }
+      });
+    const grantedRoles = ctx.session.roles?.map((id) => ({ id }));
+    const items = await ctx.prisma.pushNotification.findMany({
+      where: {
+        channel: {
+          subscribers: {
+            some: { id: input }
+          },
+          OR: [{ isPublic: true }, { grantedUserRoles: { some: { OR: grantedRoles } } }]
+        }
+      }
+    });
+    return items;
+  }),
+  listByChannelId: roleCheckProcedure(routerName24, "list").input(z41.string()).query(async ({ input, ctx }) => {
+    if (ctx.permission === "ALL" /* ALL */) return await ctx.prisma.pushNotification.findMany({ where: { channel: { id: input } } });
+    const grantedRoles = ctx.session.roles?.map((id) => ({ id }));
+    const items = await ctx.prisma.pushNotification.findMany({
+      where: {
+        channel: {
+          id: input,
+          OR: [{ isPublic: true }, { grantedUserRoles: { some: { OR: grantedRoles } } }]
+        }
+      }
+    });
+    return items;
+  }),
+  listPublic: publicProcedure.input(z41.string()).query(async ({ ctx }) => await ctx.prisma.pushNotificationChannel.findMany({ where: { isPublic: true } }))
+});
+
+// src/router/routers/pushTokens.ts
+import { z as z42 } from "zod";
+import Expo2 from "expo-server-sdk";
+import { TRPCError as TRPCError8 } from "@trpc/server";
+var SubscribeChannelRequestSchema = z42.object({ expoPushToken: z42.string(), channelId: z42.string() });
+var pushTokenRouter = createTRPCRouter({
+  create: publicProcedure.input(z42.string()).mutation(async ({ input, ctx }) => {
+    if (!Expo2.isExpoPushToken(input)) throw new TRPCError8({ code: "BAD_REQUEST", message: `Push token ${input} is not a valid Expo push token` });
+    return await ctx.prisma.expoPushTokens.create({
+      data: { id: input, userId: ctx.session?.id }
+    });
+  }),
+  subscribeChannel: publicProcedure.input(SubscribeChannelRequestSchema).mutation(async ({ input, ctx }) => {
+    if (!Expo2.isExpoPushToken(input.expoPushToken))
+      throw new TRPCError8({ code: "BAD_REQUEST", message: `Push token ${input} is not a valid Expo push token` });
+    return await ctx.prisma.expoPushTokens.update({
+      where: { id: input.expoPushToken },
+      data: { channels: { connect: { id: input.channelId } } }
+    });
+  }),
+  unsubscribeChannel: publicProcedure.input(SubscribeChannelRequestSchema).mutation(async ({ input, ctx }) => {
+    if (!Expo2.isExpoPushToken(input)) throw new TRPCError8({ code: "BAD_REQUEST", message: `Push token ${input} is not a valid Expo push token` });
+    return await ctx.prisma.expoPushTokens.update({
+      where: { id: input.expoPushToken },
+      data: { channels: { disconnect: { id: input.channelId } } }
+    });
+  })
+});
+
 // src/router/routers/index.ts
 var appRouter = createTRPCRouter({
   area: areaRouter,
@@ -2658,6 +2834,9 @@ var appRouter = createTRPCRouter({
   organisationMembers: organisationMembersRouter,
   permission: permissionRouter,
   price: priceRouter,
+  pushNotificationChannel: pushNotificationChannelRouter,
+  pushNotifications: pushNotificationsRouter,
+  pushTokens: pushTokenRouter,
   reservation: reservationRouter,
   reservationRule: reservationRuleRouter,
   season: seasonRouter,

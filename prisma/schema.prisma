@@ -7,7 +7,7 @@ generator client {
 
 generator typescriptInterfaces {
   provider = "prisma-generator-typescript-interfaces"
-  output = "../src/db/databaseTypes.ts"
+  output   = "../src/db/databaseTypes.ts"
   enumType = "enum"
   language = "typescript"
 }
@@ -35,10 +35,11 @@ model User {
 
   abonnements          Abonnement[]
   ownedReservations    Reservation[]
-  fellowedReservations Reservation[] @relation("reservationFellows")
+  fellowedReservations Reservation[]    @relation("reservationFellows")
   transactions         Transaction[]
   teams                TeamMember[]
   leadTeams            TeamSeason[]
+  expoPushTokens       ExpoPushTokens[]
 
   roles UserRole[]
 
@@ -195,10 +196,11 @@ model UserRole {
   description String?
   isDefault   Boolean @default(false)
 
-  permissions      Permission[]
-  users            User[]
-  prices           Price[]
-  reservationRules ReservationRule[]
+  permissions              Permission[]
+  users                    User[]
+  prices                   Price[]
+  reservationRules         ReservationRule[]
+  pushNotificationChannels PushNotificationChannel[] @relation("userRolePushNotificationChannels")
 
   priority Int @default(0)
 
@@ -466,4 +468,34 @@ model Event {
   likedByUsers User[]        @relation("userLikedEvents")
 
   @@map("events")
+}
+
+model PushNotificationChannel {
+  id       String  @id @default(cuid())
+  title    String
+  isPublic Boolean @default(true)
+
+  grantedUserRoles UserRole[]         @relation("userRolePushNotificationChannels")
+  notifications    PushNotification[]
+
+  subscribers ExpoPushTokens[]
+
+  @@map("pushNotificationChannels")
+}
+
+model ExpoPushTokens {
+  id       String                    @id
+  channels PushNotificationChannel[]
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String?
+}
+
+model PushNotification {
+  id      String @id @default(cuid())
+  title   String
+  message String
+
+  channel   PushNotificationChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  channelId String
 }

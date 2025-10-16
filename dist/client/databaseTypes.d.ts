@@ -66,6 +66,7 @@ interface User {
     transactions?: Transaction[];
     teams?: TeamMember[];
     leadTeams?: TeamSeason[];
+    expoPushTokens?: ExpoPushTokens[];
     roles?: UserRole[];
     likedEvents?: Event[];
 }
@@ -159,6 +160,7 @@ interface UserRole {
     users?: User[];
     prices?: Price[];
     reservationRules?: ReservationRule[];
+    pushNotificationChannels?: PushNotificationChannel[];
     priority: number;
 }
 interface Permission {
@@ -319,5 +321,26 @@ interface Event {
     categoryId: string;
     likedByUsers?: User[];
 }
+interface PushNotificationChannel {
+    id: string;
+    title: string;
+    isPublic: boolean;
+    grantedUserRoles?: UserRole[];
+    notifications?: PushNotification[];
+    subscribers?: ExpoPushTokens[];
+}
+interface ExpoPushTokens {
+    id: string;
+    channels?: PushNotificationChannel[];
+    user?: User | null;
+    userId: string | null;
+}
+interface PushNotification {
+    id: string;
+    title: string;
+    message: string;
+    channel?: PushNotificationChannel;
+    channelId: string;
+}
 
-export { type Abonnement, AbonnementStatus, type Area, type Benefit, type ControlInterface, type Court, type Event, type EventCategory, type Hallencard, type Notification, NotificationSeverity, type Organisation, type OrganisationMember, type Permission, PermissionState, type Price, type Reservation, type ReservationRule, ReservationRuleCheckOn, ReservationStatus, ReservationType, type Season, type Team, TeamCategory, type TeamMember, type TeamSeason, type Transaction, TransactionReason, type User, type UserRole, type VerificationToken };
+export { type Abonnement, AbonnementStatus, type Area, type Benefit, type ControlInterface, type Court, type Event, type EventCategory, type ExpoPushTokens, type Hallencard, type Notification, NotificationSeverity, type Organisation, type OrganisationMember, type Permission, PermissionState, type Price, type PushNotification, type PushNotificationChannel, type Reservation, type ReservationRule, ReservationRuleCheckOn, ReservationStatus, ReservationType, type Season, type Team, TeamCategory, type TeamMember, type TeamSeason, type Transaction, TransactionReason, type User, type UserRole, type VerificationToken };

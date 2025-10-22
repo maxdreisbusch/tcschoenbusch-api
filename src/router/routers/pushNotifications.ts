@@ -56,7 +56,7 @@ const sendNotifications = async (messages: ExpoPushMessage[]) => {
 	return { repushTokens, deleteTokens };
 };
 
-const routerName = 'pushNotificationRouter';
+const routerName = 'pushNotification';
 export const pushNotificationsRouter = createTRPCRouter({
 	create: roleCheckProcedure(routerName, 'create')
 		.input(PushNotificationSchema)
@@ -126,7 +126,7 @@ export const pushNotificationsRouter = createTRPCRouter({
 			return items;
 		}),
 
-	listPublic: publicProcedure
+	listMy: publicProcedure
 		.input(z.string())
-		.query(async ({ ctx }) => await ctx.prisma.pushNotificationChannel.findMany({ where: { isPublic: true } })),
+		.query(async ({ input, ctx }) => await ctx.prisma.pushNotification.findMany({ where: { channel: { subscribers: { some: { id: input } } } } })),
 });

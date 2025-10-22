@@ -9,7 +9,7 @@ const PushNotificationChannelSchema = z.object({
 	grantedUserRoles: z.number().array(),
 });
 
-const routerName = 'pushNotificationChannelRouter';
+const routerName = 'pushNotificationChannel';
 export const pushNotificationChannelRouter = createTRPCRouter({
 	create: roleCheckProcedure(routerName, 'create')
 		.input(PushNotificationChannelSchema)
@@ -31,7 +31,6 @@ export const pushNotificationChannelRouter = createTRPCRouter({
 
 		return items;
 	}),
-
 	listPublic: publicProcedure.query(async ({ ctx }) => await ctx.prisma.pushNotificationChannel.findMany({ where: { isPublic: true } })),
 
 	get: roleCheckProcedure(routerName, 'get')

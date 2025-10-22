@@ -1532,12 +1532,13 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
             }[];
             meta: object;
         }>;
-        listPublic: _trpc_server.TRPCQueryProcedure<{
+        listMy: _trpc_server.TRPCQueryProcedure<{
             input: string;
             output: {
+                message: string;
                 id: string;
                 title: string;
-                isPublic: boolean;
+                channelId: string;
             }[];
             meta: object;
         }>;

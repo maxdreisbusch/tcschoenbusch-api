@@ -29,3 +29,4 @@ primary_region = 'fra'
   PAYPAL_SECRET  = "EDzRf2xO7LPHrULITpeqwslPO_RO1pU-d1lpW3i4sVc72CGzbx4lkzG2t3cwfLzU3zyr0_7erXEMZxNW"
   PAYPAL_URL     = "https://api-m.sandbox.paypal.com"
   NODE_ENV       = "development"
+  PORT           = 3000

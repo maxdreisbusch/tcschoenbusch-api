@@ -2651,7 +2651,7 @@ var PushNotificationChannelSchema = z40.object({
   isPublic: z40.boolean().default(true),
   grantedUserRoles: z40.number().array()
 });
-var routerName23 = "pushNotificationChannelRouter";
+var routerName23 = "pushNotificationChannel";
 var pushNotificationChannelRouter = createTRPCRouter({
   create: roleCheckProcedure(routerName23, "create").input(PushNotificationChannelSchema).mutation(async ({ input, ctx }) => {
     const { title, isPublic, grantedUserRoles } = input;
@@ -2732,7 +2732,7 @@ var sendNotifications = async (messages) => {
   }
   return { repushTokens, deleteTokens };
 };
-var routerName24 = "pushNotificationRouter";
+var routerName24 = "pushNotification";
 var pushNotificationsRouter = createTRPCRouter({
   create: roleCheckProcedure(routerName24, "create").input(PushNotificationSchema).mutation(async ({ input, ctx }) => {
     const notification = await ctx.prisma.pushNotification.create({ data: input });
@@ -2786,12 +2786,12 @@ var pushNotificationsRouter = createTRPCRouter({
     });
     return items;
   }),
-  listPublic: publicProcedure.input(z41.string()).query(async ({ ctx }) => await ctx.prisma.pushNotificationChannel.findMany({ where: { isPublic: true } }))
+  listMy: publicProcedure.input(z41.string()).query(async ({ input, ctx }) => await ctx.prisma.pushNotification.findMany({ where: { channel: { subscribers: { some: { id: input } } } } }))
 });
 
 // src/router/routers/pushTokens.ts
 import { z as z42 } from "zod";
-import Expo2 from "expo-server-sdk";
+import { Expo as Expo2 } from "expo-server-sdk";
 import { TRPCError as TRPCError8 } from "@trpc/server";
 var SubscribeChannelRequestSchema = z42.object({ expoPushToken: z42.string(), channelId: z42.string() });
 var pushTokenRouter = createTRPCRouter({
@@ -2827,7 +2827,8 @@ var pushTokenRouter = createTRPCRouter({
     });
   }),
   unsubscribeChannel: publicProcedure.input(SubscribeChannelRequestSchema).mutation(async ({ input, ctx }) => {
-    if (!Expo2.isExpoPushToken(input)) throw new TRPCError8({ code: "BAD_REQUEST", message: `Push token ${input} is not a valid Expo push token` });
+    if (!Expo2.isExpoPushToken(input.expoPushToken))
+      throw new TRPCError8({ code: "BAD_REQUEST", message: `Push token ${input} is not a valid Expo push token` });
     return await ctx.prisma.expoPushTokens.update({
       where: { id: input.expoPushToken },
       data: { channels: { disconnect: { id: input.channelId } } }

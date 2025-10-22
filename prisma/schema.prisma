@@ -478,14 +478,14 @@ model PushNotificationChannel {
   grantedUserRoles UserRole[]         @relation("userRolePushNotificationChannels")
   notifications    PushNotification[]
 
-  subscribers ExpoPushTokens[]
+  subscribers ExpoPushTokens[] @relation("expoPushTokenChannels")
 
   @@map("pushNotificationChannels")
 }
 
 model ExpoPushTokens {
   id       String                    @id
-  channels PushNotificationChannel[]
+  channels PushNotificationChannel[] @relation("expoPushTokenChannels")
 
   user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String?

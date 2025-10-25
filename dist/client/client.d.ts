@@ -2026,6 +2026,58 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
             meta: object;
         }>;
     }>>;
+    stripePay: _trpc_server.TRPCBuiltRouter<{
+        ctx: {
+            session: AppSessionUser | null;
+            prisma: _prisma_client.PrismaClient<{
+                log: ("query" | "warn" | "error")[];
+            }, never, _prisma_client_runtime_library.DefaultArgs>;
+        };
+        meta: object;
+        errorShape: _trpc_server.TRPCDefaultErrorShape;
+        transformer: true;
+    }, _trpc_server.TRPCDecorateCreateRouterOptions<{
+        startCourtBookingPayment: _trpc_server.TRPCMutationProcedure<{
+            input: {
+                reservationId: string;
+                useHallencard: boolean;
+                returnUrl?: string | undefined;
+                cancelUrl?: string | undefined;
+            };
+            output: {
+                type: _prisma_client.$Enums.ReservationType | null;
+                status: _prisma_client.$Enums.ReservationStatus;
+                price: number | null;
+                id: string;
+                title: string;
+                start: Date;
+                end: Date;
+                courtId: string | null;
+                paypalTransactionId: string | null;
+                stripeTransactionId: string | null;
+                taxRate: number | null;
+                light: boolean;
+                radiator: boolean;
+                abonnementId: string | null;
+                ownerId: string | null;
+                createdAt: Date;
+                deletedAt: Date | null;
+            } | {
+                paymentIntent: string | null;
+                ephemeralKey: string | undefined;
+                customer: string | undefined;
+                publishableKey: string;
+            };
+            meta: object;
+        }>;
+        checkBookingPaymentStatus: _trpc_server.TRPCMutationProcedure<{
+            input: string;
+            output: {
+                success: boolean;
+            };
+            meta: object;
+        }>;
+    }>>;
     team: _trpc_server.TRPCBuiltRouter<{
         ctx: {
             session: AppSessionUser | null;

@@ -1657,6 +1657,7 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
                 end: Date;
                 courtId: string | null;
                 paypalTransactionId: string | null;
+                stripeTransactionId: string | null;
                 taxRate: number | null;
                 light: boolean;
                 radiator: boolean;
@@ -1711,6 +1712,7 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
                 end: Date;
                 courtId: string | null;
                 paypalTransactionId: string | null;
+                stripeTransactionId: string | null;
                 taxRate: number | null;
                 light: boolean;
                 radiator: boolean;
@@ -1739,6 +1741,7 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
                     end: Date;
                     courtId: string | null;
                     paypalTransactionId: string | null;
+                    stripeTransactionId: string | null;
                     taxRate: number | null;
                     light: boolean;
                     radiator: boolean;
@@ -2321,6 +2324,7 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
                 needsSetup: boolean;
                 email: string | null;
                 auth0Id: string;
+                stripeCustomerId: string;
                 address: string | null;
                 cityCode: string | null;
                 cityName: string | null;
@@ -2342,6 +2346,7 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
                 needsSetup: boolean;
                 email: string | null;
                 auth0Id: string;
+                stripeCustomerId: string;
                 address: string | null;
                 cityCode: string | null;
                 cityName: string | null;
@@ -2360,6 +2365,7 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
                 needsSetup: boolean;
                 email: string | null;
                 auth0Id: string;
+                stripeCustomerId: string;
                 address: string | null;
                 cityCode: string | null;
                 cityName: string | null;

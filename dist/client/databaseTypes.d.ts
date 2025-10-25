@@ -53,6 +53,7 @@ interface User {
     email: string | null;
     image: string | null;
     auth0Id: string;
+    stripeCustomerId: string;
     address: string | null;
     cityCode: string | null;
     cityName: string | null;
@@ -113,6 +114,7 @@ interface Reservation {
     status: ReservationStatus;
     type: ReservationType | null;
     paypalTransactionId: string | null;
+    stripeTransactionId: string | null;
     price: number | null;
     taxRate: number | null;
     light: boolean;
